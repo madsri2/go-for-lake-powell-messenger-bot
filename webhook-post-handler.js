@@ -52,10 +52,11 @@ function WebhookPostHandler(session, testing, pageId) {
   this.seaSprayPrototypeHandler = new BaseHandler(new SeaSprayPrototypeHandler(TEST_MODE));
   this.hackshawHandler = new BaseHandler(new HackshawHandler(TEST_MODE));
   this.hackshawPrototypeHandler = new BaseHandler(new HackshawPrototypeHandler(TEST_MODE));
-  this.newCustomerForSeaSpray = {};
+  this.newCustomerForPage = {};
 	this.pageId = PageHandler.defaultPageId;
   if(pageId) {
     this.pageId = pageId;
+    this.newCustomerForPage[this.pageId] = {};
     if(testing) setBusinessPageHandler.call(this);
   }
   this.secretManager = new SecretManager();
@@ -89,10 +90,6 @@ function WebhookPostHandler(session, testing, pageId) {
 // called to handle every message from the customer.
 // TODO: there is already a this.pageId. Use that and remove the second parameter 'pageId' here.
 function handleMessagingEvent(messagingEvent, pageId) {
-  if(!this.businessPageHandler) {
-    logger.error(`handleMessagingEvent: Error. Unable to get business page handler for pageId '${this.pageId}'`);
-    return sendTextMessage.call(this, pageEntry.messaging[i].sender.id, "We are working on something awesome! Check back in a few weeks.");
-  }
   const fbid = messagingEvent.sender.id;
   // find or create the session here so it can be used elsewhere. Only do this if a session was NOT passed in the constructor.
   if(_.isUndefined(this.passedSession)) this.session = this.sessions.findOrCreate(fbid);
@@ -178,21 +175,23 @@ function setBusinessPageHandler() {
   switch(this.pageId) {
      case this.seaSprayPrototypeHandler.businessHandler.businessPageId:
       this.businessPageHandler = this.seaSprayPrototypeHandler;
-      break;
+      return;
      case this.seaSprayHandler.businessHandler.businessPageId:
        this.businessPageHandler = this.seaSprayHandler;
-       break;
+       return;
      case this.hackshawPrototypeHandler.businessHandler.businessPageId:
        this.businessPageHandler = this.hackshawPrototypeHandler;
-       break;
+       return;
      case this.hackshawHandler.businessHandler.businessPageId:
        this.businessPageHandler = this.hackshawHandler;
-       break;
+       return;
    }
+   this.businessPageHandler = null;
 }
 
 function handlePageEntry(pageEntry) {
 		this.pageId = pageEntry.id;
+    if(!this.newCustomerForPage[this.pageId]) this.newCustomerForPage[this.pageId] = {};
     setBusinessPageHandler.call(this);
     pageAccessToken = this.pageHandler.getPageAccessToken(this.pageId);
     const timeOfEvent = pageEntry.time;
@@ -584,6 +583,11 @@ function receivedPostback(event) {
   let payload = event.postback.payload;
 
   logger.info("Received postback for user %d, page %d, session %d at timestamp: %d. Payload: %s", senderID, recipientID, this.session.fbid, timeOfPostback, payload);
+
+  if(!this.businessPageHandler) {
+    logger.warn(`determineResponseType: Error. Unable to get business page handler for pageId '${this.pageId}'. Cannot proceed without it.`);
+    return sendTextMessage.call(this, senderID, "We are working on something awesome! Check back in a few weeks.");
+  }
 
   if(payload === "GET_STARTED_PAYLOAD") return handleGettingStarted.call(this, senderID);
 
@@ -1824,8 +1828,8 @@ function marketResearchPrototype(mesg, fbid) {
 }
 
 function notifyAdminOfNewMessage(mesg, senderId) {
-  if(this.newCustomerForSeaSpray[senderId]) return;
-  this.newCustomerForSeaSpray[senderId] = true;
+  if(this.newCustomerForPage[this.pageId][senderId]) return;
+  this.newCustomerForPage[this.pageId][senderId] = true;
   let name = FbidHandler.get().getName(senderId);
   if(!name) name = senderId;
   let recipientId = this.businessPageHandler.businessHandler.madhusPageScopedFbid();
@@ -1852,6 +1856,11 @@ function determineResponseType(event) {
   const messageText = event.message.text;
   const mesg = messageText.toLowerCase();
 
+  if(!this.businessPageHandler) {
+    logger.warn(`determineResponseType: Unable to get business page handler for pageId '${this.pageId}'. Cannot proceed without it.`);
+    return sendTextMessage.call(this, senderID, "We are working on something awesome! Check back in a few weeks.");
+  }
+
   const self = this;
   const mesgPromise = messageForAnotherPage.call(this, mesg, senderID, event);
   if(mesgPromise) {
@@ -1875,6 +1884,7 @@ function determineResponseType(event) {
     // if messageForAnotherPage returned something, it indicates that we are done. So simply return.
     return;
   }
+  else return sendTextMessage.call(self, senderID, "We will be back soon with an awesome chatbot for you! Prepare to be amazed!");
 
   // if(marketResearchPrototype.call(this, mesg, senderID)) return;
 
@@ -3056,6 +3066,7 @@ function callSendAPI(messageData) {
   };
   if(TEST_MODE) return logger.debug(`MESSAGE TO CHAT: ${JSON.stringify(messageData)}`);
 	if(!pageAccessToken) pageAccessToken = this.pageHandler.getPageAccessToken(this.pageId);
+  const stack = new Error().stack;
   request({
     uri: 'https://graph.facebook.com/v2.6/me/messages',
     qs: { access_token: pageAccessToken },
@@ -3069,7 +3080,7 @@ function callSendAPI(messageData) {
       if(response.body && response.body.error) logger.error(`Continuation of above message: Message from FB is <${response.body.error.message}>; Error type: ${response.body.error.type}`);
       else if(response.body) logger.error(`Continuation of above message: response.body.error is undefined. response.body dump: ${JSON.stringify(response.body)}`);
       else logger.error(`Continuation of above message: response.body is undefined. response dump: ${JSON.stringify(response)}`);
-      logger.error(`stack trace: ${new Error().stack}`);
+      logger.error(`stack trace: ${stack}`);
     }
   });  
 }

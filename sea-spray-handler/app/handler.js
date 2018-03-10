@@ -19,7 +19,8 @@ const month = moment().month() + 1;
 function SeaSprayHandler(testing) {
   this.classifier = new Classifier();
   this.name = "Sea Spray";
-  this.adminIds = [this.madhusPageScopedFbid()];
+  const seasprayAdminId = "2027049770646124"; // id of the "person" Sea Spray Cruises (https://www.facebook.com/profile.php?id=100002761977341)
+  this.adminIds = [this.madhusPageScopedFbid(), seasprayAdminId];
   this.businessPageId = PageHandler.seaSprayPageId;
   this.testing = testing;
 }
@@ -865,7 +866,8 @@ function sunsetCruiseDetails(fbid) {
     fbid: fbid,
     compact_top_element_style: true,
     elements: [{
-      title: "Sunset cruise operates from 5.00 - 7.00 p.m.",
+      title: "Sunset cruise operates Tuesday and Friday",
+      subtitle: "At 5.00 - 7.00 p.m.",
       image_url: "http://tinyurl.com/y8cfqjla",
     }, {
       title: "Cost: Adults US $60; Children (2 to 12) US $30",

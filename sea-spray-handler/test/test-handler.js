@@ -231,6 +231,18 @@ describe("sea spray categories", function() {
     handlePromise(response, "passenger-count", done, true);
   });
 
+  it("good morning", function(done) {
+    let promise = handler.handleText("good morning", pageId, myFbid);
+    promise.done(
+      (response) => {
+        expect(response.message.message.text).to.equal("good morning");
+        done();
+      },
+      (err) => {
+        done(err);
+    });
+  });
+
   it("really long message greater than 255 characters", function(done) {
     const customerFbid = 432;
     let message = "a";

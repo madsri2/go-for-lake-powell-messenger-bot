@@ -11,7 +11,7 @@ const optionsDefn = [
   {name: 'apat', type: Boolean},
   {name: 'travel_sfo', type: Boolean},
   {name: 'sea_spray', type: Boolean},
-  {name: 'hackshaw', type: Boolean},
+  {name: 'my_hackshaw', type: Boolean},
 ];
 
 const options = cmdLineArgs(optionsDefn);

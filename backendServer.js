@@ -33,7 +33,7 @@ const express = require('express');
 const morgan = require('morgan');
 const app = express();
 const https = require('https');
-const sslPath = '/etc/letsencrypt/live/polaama.com/';
+const sslPath = '/etc/letsencrypt/live/polaama-backend.com/';
 const port = 1443;
 const options = {  
   key: fs.readFileSync(sslPath + 'privkey.pem'),
@@ -45,7 +45,7 @@ let userIdMapping = {};
 passport.use(new FacebookStrategy({
     clientID: FB_APP_ID,
     clientSecret: FB_APP_SECRET,
-    callbackURL: "https://polaama.com/auth/facebook/callback"
+    callbackURL: "https://polaama-backend.com/auth/facebook/callback"
   },
   function(accessToken, refreshToken, profile, done) {
     // From https://scotch.io/tutorials/easy-node-authentication-facebook
@@ -180,7 +180,7 @@ function verifyRequestSignature(req, res, buf) {
 const http = require('http');
 const regularApp = express();
 regularApp.get('*',function(req,res){  
-  res.redirect('https://polaama.com'+req.url)
+  res.redirect('https://polaama-backend.com'+req.url)
 });
 http.createServer(regularApp).listen(8080, function() {
   logger.info("Listening on port 8080 (all requests to this port will be redirected to the secure port).");

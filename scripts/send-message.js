@@ -6,6 +6,8 @@ const TripData = require(`${baseDir}/trip-data`);
 const Sessions = require(`${baseDir}/sessions`);
 const Commands = require(`trip-itinerary/app/commands`);
 const FbidHandler = require('fbid-handler/app/handler');
+const PageHandler = require('fbid-handler/app/page-handler');
+const FBTemplateCreator = require(`${baseDir}/fb-template-creator`);
 const logger = require(`${baseDir}/my-logger`);
 logger.setTestConfig(); // log in the test file to avoid polluting prod.
 
@@ -17,13 +19,10 @@ logger.setTestConfig(); // log in the test file to avoid polluting prod.
 // const fbid = "1718674778147181"; // Beth
 // const fbid = "1420839671315623"; // Aparna
 // *** Travel SFO Page
-const fbid = "1449869371716306"; // Dhu
+// const fbid = "1449869371716306"; // Dhu
 // const fbid = "1652003184850840"; // madhu
-let name = FbidHandler.get().getName(fbid);
-if(!name) name = ""; else name = name.substring(0, name.indexOf(" "));
-const session = Sessions.get().find(fbid);
-if(!session) throw new Error(`could not find session for fbid ${fbid}`);
-const handler = new WebhookPostHandler(session);
+// let name = FbidHandler.get().getName(fbid);
+// if(!name) name = ""; else name = name.substring(0, name.indexOf(" "));
 
 function sendPackList() {
 	const trip = new TripData("london", fbid);
@@ -410,38 +409,6 @@ function sendTodoReminders() {
   myHandler.sendReminderNotification();
 }
 
-function sendMessage() {
-  const readline = require('readline-sync');
-  const proceed = readline.question(`Send message to ${name}? [Y/N] `);
-  if(proceed !== 'Y' && proceed !== 'y') {
-    console.log(`Doing nothing`);
-    return process.exit(0);
-  }
-  console.log(`Sending message to ${name}`);
-  // Surveys: Goal: See if user liked it, would they pay, features.
-  /*
-  * What feature in the bot did you use the most?
-  * What feature(s) did you wish the bot had?
-  * How did the Bot help for your Milan trip? (N/A if it did not).
-  * Is there any trip planning feature would you pay for? If so, what? (say N/A if there is no such feature)
-  * Any other general comments about the bot?
-  */
-  
-  sendDailyMessage();
-  // sendAddedNewTripMessage();
-  // sendGoodMorningMessage();
-  // sendRentalCarDetails();
-  // sendExpenseAndFeedbackRequest();
-  // sendRecommendationAlert();
-  // sendDayPlan();
-  // sendCheckinMessage();
-  // sendSingleActivity();
-  // sendNewFeatureMessage();
-  // sendFeatureMessage();
-  // flightStatusAndWaitTimes();
-  // sendPackList();
-}
-
 const TravelSfoHandler = require('travel-sfo-handler');
 function sendToTravelSfoPage() {
   const myHandler = new WebhookPostHandler(session, false, TravelSfoHandler.pageId);
@@ -450,6 +417,46 @@ function sendToTravelSfoPage() {
   myHandler.sendAnyMessage(message);
 }
 
-sendToTravelSfoPage();
-// sendMessage();
-// sendTodoReminders();
+function sendMessage(fbid, message, pageId) {
+  if(!fbid) throw new Error("Required parameter 'fbid' is missing");
+  if(!message) throw new Error("Required parameter 'message' is missing");
+  if(!pageId) throw new Error("Required parameter 'pageId' is missing");
+  const readline = require('readline-sync');
+  let _name = FbidHandler.get().getName(fbid);
+  if(!_name) _name = ""; else _name = _name.substring(0, _name.indexOf(" "));
+  const proceed = readline.question(`Send message to ${_name}? [Y/N] `);
+  if(proceed !== 'Y' && proceed !== 'y') {
+    console.log(`Doing nothing`);
+    return process.exit(0);
+  }
+  console.log(`Sending message to ${_name}`);
+  const session = Sessions.get().find(fbid);
+  if(!session) throw new Error(`could not find session for fbid ${fbid}`);
+  const handler = new WebhookPostHandler(session, false, pageId);
+  if(typeof message === "string") message = handler.getTextMessageData(fbid, message);
+  handler.sendAnyMessage(message);
+}
+
+function sendActionReqdMessage(fbid, pageId) {
+  if(!fbid) throw new Error("Required parameter 'fbid' is missing");
+  if(!pageId) throw new Error("Required parameter 'pageId' is missing");
+  const mesg = `See "seaspray cruises" inbox for question.`;
+  const customerFbid = "2094354410590999";
+  let messageToAdmin = {
+    elements: [
+      {
+        title: "ACTION REQD",
+        subtitle: `Question from customer ${FbidHandler.get().getName(customerFbid)}`
+      },
+      {
+        title: "Question",
+        subtitle: mesg
+      }
+    ],
+  };
+  messageToAdmin.fbid = fbid;
+  sendMessage(fbid, FBTemplateCreator.list(messageToAdmin), pageId);
+}
+// 1335132323276529 -- Madhu's SeasprayCruise PSID
+const seasprayFbid = "2027049770646124"; // PSID of the "person" Sea Spray Cruises (https://www.facebook.com/profile.php?id=100002761977341&sk=friends_mutual)
+sendActionReqdMessage(seasprayFbid, PageHandler.seaSprayPageId);

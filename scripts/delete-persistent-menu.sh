@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PAGE_ACCESS_TOKEN=`node /home/ec2-user/scripts/crypto.js --pat | grep -v Logger`;
+PAGE_ACCESS_TOKEN=`node /home/ec2-user/scripts/crypto.js --apat | grep -v Logger`;
 
 curl -X DELETE -H "Content-Type: application/json" -d '{
   "fields":[

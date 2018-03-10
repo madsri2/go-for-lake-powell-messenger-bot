@@ -690,8 +690,8 @@ const pageId = PageHandler.mySeaSprayPageId;
 // testSeaSprayPostback(pageId);
 // testSeaSprayGettingStarted(pageId);
 
-testHackshawGettingStarted(PageHandler.myHackshawPageId);
-// testHackshaw(PageHandler.myHackshawPageId);
+// testHackshawGettingStarted(PageHandler.myHackshawPageId);
+testHackshaw(PageHandler.myHackshawPageId);
 // testHackshawPostback(PageHandler.myHackshawPageId);
 
 /*

@@ -38,6 +38,16 @@ BaseHandler.prototype.greeting = function(pageId, fbid) {
   }
 }
 
+// If the user says something like "good morning" or "good evening", respond with the same message. We can't let dialogflow handle this because it's hard to distinguish between this message as a "greeting" or a farewell. One way this can be handled is to specify context (if there is no context, its a greeting, if not its a farewell), but this means that dialogflow needs to use context to determine intent. Not sure if it has this feature.
+function echoGreeting(mesg) {
+  if(mesg === "good morning" || mesg === "morning" || mesg === "'morning" ||
+     mesg === "good afternoon" || mesg === "afternoon" || mesg === "'aftnoon" ||
+     mesg === "good evening" || mesg === "evening" || mesg === "'evening" ||
+     mesg === "good night" || mesg === "night" || mesg === "'night")
+     return mesg;
+  return null;
+}
+
 BaseHandler.prototype.handleText = function(mesg, pageId, fbid) {
   this.adminMessageSender.setAdminIds(this.adminIds);
   const pageDetails = this.businessHandler.pageDetails();
@@ -56,6 +66,13 @@ BaseHandler.prototype.handleText = function(mesg, pageId, fbid) {
       return Promise.reject(err);
   }).then(
     (response) => {
+      if(echoGreeting(mesg)) return Promise.resolve({
+        _done: true,
+        message: FBTemplateCreator.text({
+          fbid: fbid,
+          text: mesg
+        })
+      });
       // perform actual classification if message should be handled by bot and not human
       if(!response) return self.classifier.classify(mesg);
       return Promise.resolve({
